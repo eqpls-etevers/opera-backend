@@ -2,7 +2,7 @@
 
 # eqpls #########################
 UERP_ENDPOINT="uerp:8080"
-ORGANIZATION="eqpls"
+ORGANIZATION="opera"
 
 echo -n "export MINIO_IDENTITY_OPENID_CLIENT_SECRET_PRIMARY_IAM=" > /client_secret
 curl -s "http://$UERP_ENDPOINT/internal/client/secret?org=$ORGANIZATION&client=minio" >> /client_secret
