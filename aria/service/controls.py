@@ -42,7 +42,7 @@ class Control(MeshControl):
     def generateUuid4(self): return str(uuid.uuid4())
 
     def login(self):
-        return f'https://{self.ariaVidmHostname}/SAAS/auth/oauth2/authorize?response_type=code&state={self.generateUuid4()}&client_id={self.ariaClientId}&redirect_uri={self.ariaRedirectUri}'
+        return f'https://{self.ariaVidmHostname}/SAAS/auth/oauth2/authorize?domain=sddc.lab&response_type=code&state={self.generateUuid4()}&client_id={self.ariaClientId}&redirect_uri={self.ariaRedirectUri}'
 
     async def callback(self, code:str, state:str, userstore:str):
         LOG.DEBUG(code)
