@@ -50,10 +50,16 @@ class Control(MeshControl):
         LOG.DEBUG(userstore)
 
         async with AsyncRest(f'https://{self.ariaVidmHostname}') as req:
-            return await req.post(f'/SAAS/auth/oauthtoken?grant_type=authorization_code&code={code}&redirect_uri={self.ariaRedirectUri}', headers=self.ariaVidmHeaders)
+            res = await req.post(f'/SAAS/auth/oauthtoken?grant_type=authorization_code&code={code}&redirect_uri={self.ariaRedirectUri}', headers=self.ariaVidmHeaders)
+            LOG.DEBUG(res)
+            vidmAccessToken = res['access_token']
+
+        aa = await self.authorize(vidmAccessToken)
+        LOG.DEBUG(aa)
+        return aa
 
     async def authorize(self, token):
-        redirectUri = f'https://{self.ariaAAHostname}/identity/api/core/authn/csp'
+        redirectUri = f'https://{self.ariaAAHostname}/provisioning/core/authn/csp'
         state = base64.b64encode(f'https://{self.ariaAAHostname}/provisioning/access-token'.encode('ascii')).decode('ascii')
         async with AsyncRest(f'https://{self.ariaVidmHostname}') as req:
             res = await req.get(f'/SAAS/auth/oauth2/authorize?response_type=code&client_id={self.ariaAAClientId}&redirect_uri={redirectUri}&state={state}', headers={
