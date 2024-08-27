@@ -44,7 +44,7 @@ class Control(MeshControl):
     def login(self):
         return f'https://{self.ariaVidmHostname}/SAAS/auth/oauth2/authorize?response_type=code&state={self.generateUuid4()}&client_id={self.ariaClientId}&redirect_uri={self.redirectUri}'
 
-    def callback(self, code:str, state:str, userstore:str):
+    async def callback(self, code:str, state:str, userstore:str):
         LOG.DEBUG(code)
         LOG.DEBUG(state)
         LOG.DEBUG(userstore)
