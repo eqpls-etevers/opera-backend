@@ -27,8 +27,6 @@ class Control(MeshControl):
         self.redirectUri = f'{self.uri}/auth/callback'
         self.redirectUrl = f'https://{self.endpoint}{self.redirectUri}'
 
-        self.ariaCallbackUri = self.config['aria']['callback_uri']
-
         self.vidmHostname = self.config['aria']['vidm_hostname']
         self.vidmClientId = self.config['aria']['vidm_client_id']
         self.vidmClientSecret = self.config['aria']['vidm_client_secret']
