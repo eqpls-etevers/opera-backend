@@ -23,19 +23,11 @@ api = ctrl.api
 #===============================================================================
 # API Interfaces
 #===============================================================================
-@api.get(f'{ctrl.uri}/auth/login')
+@api.get(ctrl.loginUri)
 async def login() -> RedirectResponse:
     return RedirectResponse(url=ctrl.login())
 
 
-@api.get(f'{ctrl.uri}/auth/callback')
+@api.get(ctrl.redirectUri)
 async def callback(code:str, state:str, userstore:str) -> dict:
     return await ctrl.callback(code, state, userstore)
-
-
-@api.get(f'{ctrl.uri}/auth/authorize')
-async def authorize(
-    org: ORG_HEADER,
-    token: AUTH_HEADER,
-) -> dict:
-    return await ctrl.authorize(token.credentials)
