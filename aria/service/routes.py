@@ -31,3 +31,11 @@ async def login() -> RedirectResponse:
 @api.get(f'{ctrl.uri}/auth/callback')
 async def callback(code:str, state:str, userstore:str) -> dict:
     return await ctrl.callback(code, state, userstore)
+
+
+@api.get(f'{ctrl.uri}/auth/authorize')
+async def authorize(
+    org: ORG_HEADER,
+    token: AUTH_HEADER,
+) -> dict:
+    return await ctrl.authorize(token.credentials)

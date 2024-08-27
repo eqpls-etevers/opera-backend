@@ -32,12 +32,23 @@ class Control(MeshControl):
         }
 
         self.ariaAAHostname = self.config['aria']['aa_hostname']
+        self.ariaAAClientId = self.config['aria']['aa_client_id']
+        self.ariaAAClientSecret = self.config['aria']['aa_client_secret']
 
     async def startup(self): pass
 
     async def shutdown(self): pass
 
     def generateUuid4(self): return str(uuid.uuid4())
+
+    def authorize(self, token):
+        redirectUri = f'https://{self.ariaAAHostname}/identity/api/core/authn/csp'
+        state = base64.b64encode(f'https://{self.ariaAAHostname}/provisioning/access-token'.encode('ascii')).decode('ascii')
+        async with AsyncRest(f'https://{self.ariaVidmHostname}') as req:
+            res = await req.get(f'/SAAS/auth/oauth2/authorize?response_type=code&client_id={self.ariaAAClientId}&redirect_uri={redirectUri}&state={state}', headers={
+                'Authorization': f'Bearer {token}'
+            })
+            return res
 
     def login(self):
         return f'https://{self.ariaVidmHostname}/SAAS/auth/oauth2/authorize?response_type=code&state={self.generateUuid4()}&client_id={self.ariaClientId}&redirect_uri={self.ariaRedirectUri}'
