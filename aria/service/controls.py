@@ -33,7 +33,7 @@ class Control(MeshControl):
         self.ariaAAHostname = self.config['aria']['aa_hostname']
 
         endpoint = self.config['default']['endpoint']
-        self.reidrectUri = f'https://{endpoint}/aria/auth/callback'
+        self.redirectUri = f'https://{endpoint}/aria/auth/callback'
 
     async def startup(self): pass
 
