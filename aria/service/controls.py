@@ -23,6 +23,7 @@ class Control(MeshControl):
 
         self.ariaClientId = self.config['aria']['client_id']
         self.ariaClientSecret = self.config['aria']['client_secret']
+        self.ariaRedirectUri = self.config['aria']['redirect_uri']
 
         self.ariaVidmHostname = self.config['aria']['vidm_hostname']
         self.ariaVidmAuth = base64.b64encode(f'{self.ariaClientId}:{self.ariaClientSecret}'.encode('ascii')).decode('ascii')
@@ -32,11 +33,6 @@ class Control(MeshControl):
 
         self.ariaAAHostname = self.config['aria']['aa_hostname']
 
-        # endpoint = self.config['default']['endpoint']
-        # self.redirectUri = f'https://{endpoint}/aria/auth/callback'
-
-        self.redirectUri = 'https://ariavidm.ariavra.sddc.lab/identity/api/core/authn/csp'
-
     async def startup(self): pass
 
     async def shutdown(self): pass
@@ -44,7 +40,7 @@ class Control(MeshControl):
     def generateUuid4(self): return str(uuid.uuid4())
 
     def login(self):
-        return f'https://{self.ariaVidmHostname}/SAAS/auth/oauth2/authorize?response_type=code&state={self.generateUuid4()}&client_id={self.ariaClientId}&redirect_uri={self.redirectUri}'
+        return f'https://{self.ariaVidmHostname}/SAAS/auth/oauth2/authorize?response_type=code&state={self.generateUuid4()}&client_id={self.ariaClientId}&redirect_uri={self.ariaRedirectUri}'
 
     async def callback(self, code:str, state:str, userstore:str):
         LOG.DEBUG(code)
@@ -52,4 +48,4 @@ class Control(MeshControl):
         LOG.DEBUG(userstore)
 
         async with AsyncRest(f'https://{self.ariaVidmHostname}') as req:
-            return await req.post(f'/SAAS/auth/oauthtoken?grant_type=authorization_code&code={code}&redirect_uri={self.redirectUri}', headers=self.ariaVidmHeaders)
+            return await req.post(f'/SAAS/auth/oauthtoken?grant_type=authorization_code&code={code}&redirect_uri={self.ariaRedirectUri}', headers=self.ariaVidmHeaders)
