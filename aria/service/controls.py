@@ -32,8 +32,10 @@ class Control(MeshControl):
 
         self.ariaAAHostname = self.config['aria']['aa_hostname']
 
-        endpoint = self.config['default']['endpoint']
-        self.redirectUri = f'https://{endpoint}/aria/auth/callback'
+        # endpoint = self.config['default']['endpoint']
+        # self.redirectUri = f'https://{endpoint}/aria/auth/callback'
+
+        self.redirectUri = 'https://ariavra.sddc.lab/identity/api/core/authn/csp'
 
     async def startup(self): pass
 
