@@ -23,6 +23,7 @@ class Control(MeshControl):
 
         self.domain = self.config['default']['domain']
         self.endpoint = self.config['default']['endpoint']
+        self.homeUrl = f'https://{self.endpoint}'
         self.loginUri = f'{self.uri}/auth/login'
         self.redirectUri = f'{self.uri}/auth/callback'
         self.redirectUrl = f'https://{self.endpoint}{self.redirectUri}'
@@ -52,6 +53,7 @@ class Control(MeshControl):
         async with AsyncRest(f'https://{self.vidmHostname}') as req:
             res = await req.post(f'/SAAS/auth/oauthtoken?grant_type=authorization_code&code={code}&redirect_uri={self.redirectUrl}', headers=self.vidmHeaders)
         async with AsyncRest(f'https://{self.vidmHostname}') as req:
-            return await req.get(f'/SAAS/auth/oauth2/authorize?response_type=code&client_id={self.aaClientId}&redirect_uri={self.aaRedirectUri}&state={self.aaState}', headers={
+            res = await req.get(f'/SAAS/auth/oauth2/authorize?response_type=code&client_id={self.aaClientId}&redirect_uri={self.aaRedirectUri}&state={self.aaState}', headers={
                 'Authorization': f'Bearer {res["access_token"]}'
             })
+        return res['access_token']

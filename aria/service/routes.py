@@ -9,8 +9,6 @@ Equal Plus
 #===============================================================================
 from fastapi.responses import RedirectResponse
 
-from common import EpException, ID, AUTH_HEADER, ORG_HEADER
-
 from .controls import Control
 
 #===============================================================================
@@ -29,5 +27,7 @@ async def login() -> RedirectResponse:
 
 
 @api.get(ctrl.redirectUri)
-async def callback(code:str, state:str, userstore:str) -> dict:
-    return await ctrl.callback(code, state, userstore)
+async def callback(code:str, state:str, userstore:str) -> RedirectResponse:
+    response = RedirectResponse(url=ctrl.homeUrl)
+    response.set_cookie(key='AA_ACCESS_TOKEN', value=await ctrl.callback(code, state, userstore))
+    return response
