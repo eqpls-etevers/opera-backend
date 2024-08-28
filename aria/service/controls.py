@@ -138,7 +138,7 @@ class Control(MeshControl):
             for hostname, client in self.aaMap.items():
                 clientId = client['clientId']
                 redirectUri = client['redirectUri']
-                # state = base64.b64encode(f'https://{hostname}/identity/api/access-token'.encode('ascii')).decode('ascii')
+                state = base64.b64encode(f'https://{hostname}/identity/api/access-token'.encode('ascii')).decode('ascii')
                 
                 LOG.DEBUG(clientId)
                 LOG.DEBUG(redirectUri)
