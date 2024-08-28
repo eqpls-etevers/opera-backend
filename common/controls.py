@@ -377,7 +377,10 @@ class UerpControl(BaseControl):
                 LOG.DEBUG(model)
                 
                 if model: return schema(**model)
-            except: pass
+            except Exception as e:
+                traceback.print_exc()
+                print(e)
+                
         if LAYER.checkSearch(schemaInfo.layer):
             try:
                 model = await self._uerpSearch.read(schema, id)
