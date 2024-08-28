@@ -86,7 +86,7 @@ class Control(MeshControl):
                         'clientId': self.endpoint,
                         'rememberAs': self.endpoint,
                         'secret': secret,
-                        'redirectUri': self.redirectUrl,
+                        'redirectUri': self.operaRedirectUrl,
                         'scope': 'email profile user openid',
                         'authGrantTypes': 'authorization_code refresh_token',
                         'tokenType': 'Bearer',
