@@ -344,7 +344,7 @@ class UerpControl(BaseControl):
 
         if not authInfo.checkAdmin() and AAA.checkAuthentication(schemaInfo.aaa) and not authInfo.checkReadACL(schemaInfo.sref): raise EpException(403, 'Forbidden')
         model = await self.readModel(schema, id)
-        if not authInfo.checkOrg(model.org): raise EpException(404, 'Not Found')
+        if model.org and not authInfo.checkOrg(model.org): raise EpException(404, 'Not Found')
         if AAA.checkAccount(schemaInfo.aaa):
             if not authInfo.checkUsername(model.owner): raise EpException(403, 'Forbidden')
         elif AAA.checkGroup(schemaInfo.aaa):
@@ -364,23 +364,11 @@ class UerpControl(BaseControl):
     ):
         schemaInfo = schema.getSchemaInfo()
         
-        LOG.DEBUG(id)
-        LOG.DEBUG(schemaInfo.layer)
-
         if LAYER.checkCache(schemaInfo.layer):
-            
-            LOG.DEBUG('on cache')
-            
             try:
                 model = await self._uerpCache.read(schema, id)
-                
-                LOG.DEBUG(model)
-                
                 if model: return schema(**model)
-            except Exception as e:
-                traceback.print_exc()
-                print(e)
-                
+            except: pass
         if LAYER.checkSearch(schemaInfo.layer):
             try:
                 model = await self._uerpSearch.read(schema, id)
@@ -720,7 +708,7 @@ class UerpControl(BaseControl):
         origin = await self.readModel(schema, id)
         if not authInfo.checkAdmin():
             if AAA.checkAuthentication(schemaInfo.aaa) and not authInfo.checkUpdateACL(schemaInfo.sref): raise EpException(403, 'Forbidden')
-            if not authInfo.checkOrg(origin.org): raise EpException(403, 'Forbidden')
+            if origin.org and not authInfo.checkOrg(origin.org): raise EpException(403, 'Forbidden')
             if AAA.checkAccount(schemaInfo.aaa) and not authInfo.checkUsername(origin.owner): raise EpException(403, 'Forbidden')
 
         await self.updateModel(schema, model.setID(id).updateStatus(org=authInfo.org, owner=authInfo.username).model_dump())
@@ -742,7 +730,7 @@ class UerpControl(BaseControl):
         origin = await self.readModel(schema, id)
         if not authInfo.checkAdmin():
             if AAA.checkAuthentication(schemaInfo.aaa) and not authInfo.checkUpdateACL(schemaInfo.sref): raise EpException(403, 'Forbidden')
-            if not authInfo.checkOrg(origin.org): raise EpException(403, 'Forbidden')
+            if origin.org and not authInfo.checkOrg(origin.org): raise EpException(403, 'Forbidden')
             if not authInfo.checkGroup(origin.owner): raise EpException(403, 'Forbidden')
 
         await self.updateModel(schema, model.setID(id).updateStatus(org=authInfo.org, owner=origin.owner).model_dump())
@@ -807,7 +795,7 @@ class UerpControl(BaseControl):
         origin = await self.readModel(schema, id)
         if not authInfo.checkAdmin():
             if AAA.checkAuthentication(schemaInfo.aaa) and not authInfo.checkDeleteACL(schemaInfo.sref): raise EpException(403, 'Forbidden')
-            if not authInfo.checkOrg(origin.org): raise EpException(403, 'Forbidden')
+            if origin.org and not authInfo.checkOrg(origin.org): raise EpException(403, 'Forbidden')
             if AAA.checkAccount(schemaInfo.aaa) and not authInfo.checkUsername(origin.owner): raise EpException(403, 'Forbidden')
 
         await self.deleteModel(schema, id, origin.setID(id).updateStatus(org=authInfo.org, owner=authInfo.username, deleted=True).model_dump(), force)
@@ -835,7 +823,7 @@ class UerpControl(BaseControl):
         origin = await self.readModel(schema, id)
         if not authInfo.checkAdmin():
             if AAA.checkAuthentication(schemaInfo.aaa) and not authInfo.checkDeleteACL(schemaInfo.sref): raise EpException(403, 'Forbidden')
-            if not authInfo.checkOrg(origin.org): raise EpException(403, 'Forbidden')
+            if origin.org and not authInfo.checkOrg(origin.org): raise EpException(403, 'Forbidden')
             if not authInfo.checkGroup(origin.owner): raise EpException(403, 'Forbidden')
 
         await self.deleteModel(schema, id, origin.setID(id).updateStatus(org=authInfo.org, owner=origin.owner, deleted=True).model_dump(), force)
