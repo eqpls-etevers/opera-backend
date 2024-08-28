@@ -152,8 +152,7 @@ class Control(MeshControl):
                 
                 aa.append({
                     'hostname': hostname,
-                    'accessToken': aaTokens['access_token'],
-                    'refreshToken': aaTokens['refresh_token']
+                    'accessToken': aaTokens['access_token']
                 })
         async with AsyncRest(self.uerpEndpoint) as req:
             endpoint = await req.post('/internal/aria/endpoint', json={
