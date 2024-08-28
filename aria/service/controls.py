@@ -123,33 +123,18 @@ class Control(MeshControl):
         return f'https://{self.vidmHostname}/SAAS/auth/oauth2/authorize?domain={self.domain}&response_type=code&state={self.generateUuid4()}&client_id={self.endpoint}&redirect_uri={self.operaRedirectUrl}'
 
     async def authorize(self, code:str, state:str, userstore:str):
-        
-        LOG.DEBUG(code)
-        LOG.DEBUG(state)
-        
         async with AsyncRest(f'https://{self.vidmHostname}') as req:
             vidmTokens = await req.post(f'/SAAS/auth/oauthtoken?grant_type=authorization_code&code={code}&redirect_uri={self.operaRedirectUrl}', headers=self.vidmOperaHeaders)
         vidmAccessToken = vidmTokens['access_token']
-        
-        LOG.DEBUG(vidmAccessToken)
-        
         aa = []
         async with AsyncRest(f'https://{self.vidmHostname}') as req:
             for hostname, client in self.aaMap.items():
                 clientId = client['clientId']
                 redirectUri = client['redirectUri']
                 state = base64.b64encode(f'https://{hostname}/identity/api/access-token'.encode('ascii')).decode('ascii')
-                
-                LOG.DEBUG(clientId)
-                LOG.DEBUG(redirectUri)
-                LOG.DEBUG(state)
-                
                 aaTokens = await req.get(f'/SAAS/auth/oauth2/authorize?response_type=code&client_id={clientId}&redirect_uri={redirectUri}&state={state}', headers={
                     'Authorization': f'Bearer {vidmAccessToken}'
                 })
-                
-                LOG.DEBUG(aaTokens)
-                
                 aa.append({
                     'hostname': hostname,
                     'accessToken': aaTokens['access_token']
@@ -163,5 +148,6 @@ class Control(MeshControl):
                 },
                 'aa': aa
             })
+            LOG.DEBUG(endpoint)
             
         return endpoint['id']
