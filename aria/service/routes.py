@@ -23,7 +23,7 @@ ctrl = Control(__file__)
 api = ctrl.api
 
 AA_AUTH_HEADER = Annotated[str, Depends(APIKeyHeader(name='AA-Auth'))]
-AA_HOST_HEADER = Annotated[str, Depends(APIKeyHeader(name='AA-Auth'))]
+AA_HOST_HEADER = Annotated[str, Depends(APIKeyHeader(name='AA-Host'))]
 
 
 #===============================================================================
