@@ -14,6 +14,7 @@ from driver.redis import RedisModel
 from driver.elasticsearch import ElasticSearch
 from driver.postgresql import PostgreSql
 
+from schema.aria import Endpoint
 from schema.secret.certification import Authority, Server
 from schema.secret.access import OpenSsh
 
@@ -34,8 +35,10 @@ class Control(UerpControl):
         )
 
     async def startup(self):
+        await self.registerModel(Endpoint)
         await self.registerModel(Authority)
         await self.registerModel(Server)
         await self.registerModel(OpenSsh)
 
     async def shutdown(self): pass
+    

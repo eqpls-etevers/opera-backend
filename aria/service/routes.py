@@ -29,5 +29,5 @@ async def login() -> RedirectResponse:
 @api.get(ctrl.redirectUri)
 async def callback(code:str, state:str, userstore:str) -> RedirectResponse:
     response = RedirectResponse(url=ctrl.homeUrl)
-    response.set_cookie(key='AA_ACCESS_TOKEN', value=await ctrl.callback(code, state, userstore))
+    response.set_cookie(key='ARIA_ENDPOINT_ID', value=await ctrl.authorize(code, state, userstore))
     return response
