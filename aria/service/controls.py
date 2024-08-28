@@ -40,7 +40,7 @@ class Control(MeshControl):
         self.vidmClientId = self.config['aria']['vidm_client_id']
         self.vidmClientSecret = self.config['aria']['vidm_client_secret']
         self.vidmBaseUrl = f'https://{self.vidmHostname}'
-        self.vidmHeaders = {
+        self.vidmAdminHeaders = {
             'Authorization': 'Basic ' + base64.b64encode(f'{self.vidmClientId}:{self.vidmClientSecret}'.encode('ascii')).decode('ascii')
         }
         
@@ -62,7 +62,7 @@ class Control(MeshControl):
     
     async def initAriaBackends(self):
         async with AsyncRest(self.vidmBaseUrl) as req:
-            vidmAccessToken = (await req.post('/SAAS/auth/oauthtoken?grant_type=client_credentials', headers=self.vidmHeaders))['access_token']
+            vidmAccessToken = (await req.post('/SAAS/auth/oauthtoken?grant_type=client_credentials', headers=self.vidmAdminHeaders))['access_token']
             vidmBearerToken = f'Bearer {vidmAccessToken}'
             headers = {
                 'Authorization': vidmBearerToken
@@ -72,7 +72,7 @@ class Control(MeshControl):
             vidmAaClientIds = []
             for client in (await req.get('/SAAS/jersey/manager/api/oauth2clients', headers=headers))['items']:
                 clientId = client['clientId']
-                if self.endpoint in clientId: vidmOperaClient = client
+                if self.endpoint == clientId: vidmOperaClient = client
                 elif self.aaClientPrefix in clientId and client['scope'] == 'user openid email profile': vidmAaClientIds.append(client['clientId'])
             
             if not vidmOperaClient:
@@ -105,6 +105,9 @@ class Control(MeshControl):
                 async with AsyncRest(self.vidmBaseUrl) as req:
                     vidmOperaClient = await req.get(f'/SAAS/jersey/manager/api/oauth2clients/{vidmOperaClient["clientId"]}', headers=headers)
             self.vidmOperaSecret = vidmOperaClient['secret']
+            self.vidmOperaHeaders = {
+                'Authorization': 'Basic ' + base64.b64encode(f'{self.endpoint}:{self.vidmOperaSecret}'.encode('ascii')).decode('ascii')
+            }
             
             async with AsyncRest(self.vidmBaseUrl) as req:
                 for clientId in vidmAaClientIds:
@@ -125,7 +128,7 @@ class Control(MeshControl):
         LOG.DEBUG(state)
         
         async with AsyncRest(f'https://{self.vidmHostname}') as req:
-            vidmTokens = await req.post(f'/SAAS/auth/oauthtoken?grant_type=authorization_code&code={code}&state={state}&redirect_uri={self.operaRedirectUrl}', headers=self.vidmHeaders)
+            vidmTokens = await req.post(f'/SAAS/auth/oauthtoken?grant_type=authorization_code&code={code}&redirect_uri={self.operaRedirectUrl}', headers=self.vidmOperaHeaders)
         vidmAccessToken = vidmTokens['access_token']
         
         LOG.DEBUG(vidmAccessToken)
@@ -135,7 +138,7 @@ class Control(MeshControl):
             for hostname, client in self.aaMap.items():
                 clientId = client['clientId']
                 redirectUri = client['redirectUri']
-                state = base64.b64encode(f'https://{hostname}/identity/api/access-token'.encode('ascii')).decode('ascii')
+                # state = base64.b64encode(f'https://{hostname}/identity/api/access-token'.encode('ascii')).decode('ascii')
                 
                 LOG.DEBUG(clientId)
                 LOG.DEBUG(redirectUri)
