@@ -158,7 +158,5 @@ class Control(MeshControl):
                 },
                 'aa': aa
             })
-            LOG.DEBUG(endpoint)
-            
         return endpoint['id']
     
