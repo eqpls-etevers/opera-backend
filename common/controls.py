@@ -363,10 +363,19 @@ class UerpControl(BaseControl):
         id
     ):
         schemaInfo = schema.getSchemaInfo()
+        
+        LOG.DEBUG(id)
+        LOG.DEBUG(schemaInfo.layer)
 
         if LAYER.checkCache(schemaInfo.layer):
+            
+            LOG.DEBUG('on cache')
+            
             try:
                 model = await self._uerpCache.read(schema, id)
+                
+                LOG.DEBUG(model)
+                
                 if model: return schema(**model)
             except: pass
         if LAYER.checkSearch(schemaInfo.layer):
