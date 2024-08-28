@@ -41,7 +41,7 @@ async def get_api(
     if request.scope['query_string']:
         queryString = request.scope['query_string'].decode('latin-1')
         url = f'{url}?{queryString}'
-    async with AsyncRest(f'https://{aaHost}') as req:
+    async with AsyncRest(f'https://{aaHost}/') as req:
         return await req.get(url, headers={
             'Authorization': f'Bearer {aaAuth}',
             'Accept': 'application/json; charset=utf-8'
@@ -60,7 +60,7 @@ async def post_api(
     if request.scope['query_string']:
         queryString = request.scope['query_string'].decode('latin-1')
         url = f'{url}?{queryString}'
-    async with AsyncRest(f'https://{aaHost}') as req:
+    async with AsyncRest(f'https://{aaHost}/') as req:
         return await req.post(url, headers={
             'Authorization': f'Bearer {aaAuth}',
             'Content-Type': 'application/json; charset=utf-8',
@@ -80,7 +80,7 @@ async def put_api(
     if request.scope['query_string']:
         queryString = request.scope['query_string'].decode('latin-1')
         url = f'{url}?{queryString}'
-    async with AsyncRest(f'https://{aaHost}') as req:
+    async with AsyncRest(f'https://{aaHost}/') as req:
         return await req.put(url, headers={
             'Authorization': f'Bearer {aaAuth}',
             'Content-Type': 'application/json; charset=utf-8',
@@ -100,7 +100,7 @@ async def patch_api(
     if request.scope['query_string']:
         queryString = request.scope['query_string'].decode('latin-1')
         url = f'{url}?{queryString}'
-    async with AsyncRest(f'https://{aaHost}') as req:
+    async with AsyncRest(f'https://{aaHost}/') as req:
         return await req.patch(url, headers={
             'Authorization': f'Bearer {aaAuth}',
             'Content-Type': 'application/json; charset=utf-8',
@@ -120,7 +120,7 @@ async def delete_api(
     if request.scope['query_string']:
         queryString = request.scope['query_string'].decode('latin-1')
         url = f'{url}?{queryString}'
-    async with AsyncRest(f'https://{aaHost}') as req:
+    async with AsyncRest(f'https://{aaHost}/') as req:
         return await req.delete(url, headers={
             'Authorization': f'Bearer {aaAuth}',
             'Accept': 'application/json; charset=utf-8'
