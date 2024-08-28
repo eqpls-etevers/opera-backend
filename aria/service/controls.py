@@ -47,11 +47,6 @@ class Control(MeshControl):
         self.aaClientPrefix = self.config['aria']['aa_client_prefix']
         self.aaMap = {}
         
-        # self.aaHostname = self.config['aria']['aa_hostname']
-        # self.aaClientId = self.config['aria']['aa_client_id']
-        # self.aaRedirectUri = self.config['aria']['aa_redirect_uri']
-        # self.aaState = base64.b64encode(f'https://{self.aaHostname}/provisioning/access-token'.encode('ascii')).decode('ascii')
-
     async def startup(self):
         await self.registerModel(Endpoint, 'uerp')
         await self.initAriaBackends()
