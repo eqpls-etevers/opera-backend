@@ -142,12 +142,9 @@ class Control(MeshControl):
                             'Authorization': f'Bearer {aaAccessToken}',
                             'Accept': 'application/json'
                         })
-                        LOG.DEBUG(res)
                         if res['content'] and 'serviceName' in res['content'][0]: branding = res['content'][0]['serviceName']
                         else: branding = hostname
-                except Exception as e:
-                    LOG.DEBUG(e)
-                    branding = None
+                except: branding = None
                 aa.append({
                     'hostname': hostname,
                     'name': branding if branding else hostname,
