@@ -120,9 +120,16 @@ class Control(MeshControl):
         return f'https://{self.vidmHostname}/SAAS/auth/oauth2/authorize?domain={self.domain}&response_type=code&state={self.generateUuid4()}&client_id={self.endpoint}&redirect_uri={self.operaRedirectUrl}'
 
     async def authorize(self, code:str, state:str, userstore:str):
+        
+        LOG.DEBUG(code)
+        LOG.DEBUG(state)
+        
         async with AsyncRest(f'https://{self.vidmHostname}') as req:
-            vidmTokens = await req.post(f'/SAAS/auth/oauthtoken?grant_type=authorization_code&code={code}&redirect_uri={self.operaRedirectUrl}', headers=self.vidmHeaders)
+            vidmTokens = await req.post(f'/SAAS/auth/oauthtoken?grant_type=authorization_code&code={code}&state={state}&redirect_uri={self.operaRedirectUrl}', headers=self.vidmHeaders)
         vidmAccessToken = vidmTokens['access_token']
+        
+        LOG.DEBUG(vidmAccessToken)
+        
         aa = []
         async with AsyncRest(f'https://{self.vidmHostname}') as req:
             for hostname, client in self.aaMap.items():
