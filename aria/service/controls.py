@@ -103,12 +103,12 @@ class Control(MeshControl):
                     })
             else:
                 async with AsyncRest(self.vidmBaseUrl) as req:
-                    vidmOperaClient = await req.get(f'SAAS/jersey/manager/api/oauth2clients/{vidmOperaClient["clientId"]}', headers=headers)
+                    vidmOperaClient = await req.get(f'/SAAS/jersey/manager/api/oauth2clients/{vidmOperaClient["clientId"]}', headers=headers)
             self.vidmOperaSecret = vidmOperaClient['secret']
             
             async with AsyncRest(self.vidmBaseUrl) as req:
                 for clientId in vidmAaClientIds:
-                    client = await req.get(f'SAAS/jersey/manager/api/oauth2clients/{clientId}', headers=headers)
+                    client = await req.get(f'/SAAS/jersey/manager/api/oauth2clients/{clientId}', headers=headers)
                     redirectUri = [redirectUri.strip() for redirectUri in client['redirectUri'].split(',')][0]
                     hostname = re.match('^https:\/\/(?P<hostName>[^\/]+)\/', redirectUri)['hostName']
                     self.aaMap[hostname] = {
