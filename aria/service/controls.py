@@ -132,22 +132,40 @@ class Control(MeshControl):
                 clientId = client['clientId']
                 redirectUri = client['redirectUri']
                 state = base64.b64encode(f'https://{hostname}/identity/api/access-token'.encode('ascii')).decode('ascii')
-                aaTokens = await req.get(f'/SAAS/auth/oauth2/authorize?response_type=code&client_id={clientId}&redirect_uri={redirectUri}&state={state}', headers={
-                    'Authorization': f'Bearer {vidmAccessToken}'
-                })
+                
+                try:
+                    aaAccessToken = (await req.get(f'/SAAS/auth/oauth2/authorize?response_type=code&client_id={clientId}&redirect_uri={redirectUri}&state={state}', headers={
+                        'Authorization': f'Bearer {vidmAccessToken}'
+                    }))['access_token']
+                    async with AsyncRest(f'https://{hostname}') as req:
+                        res = await req.get('/userprofile/api/branding/byservice/cloud_assembly', {
+                            'Authorization': f'Bearer {aaAccessToken}',
+                            'Accept': 'application/json'
+                        })
+                        LOG.DEBUG(res)
+                        branding = res['content'][0]['serviceName']
+                except Exception as e:
+                    LOG.DEBUG(e)
+                    branding = None
                 aa.append({
                     'hostname': hostname,
-                    'accessToken': aaTokens['access_token']
+                    'name': branding if branding else hostname,
+                    'accessToken': aaAccessToken if branding else '',
+                    'refreshToken': '',
+                    'status': True if branding else False
                 })
         async with AsyncRest(self.uerpEndpoint) as req:
             endpoint = await req.post('/internal/aria/endpoint', json={
                 'vidm': {
                     'hostname': self.vidmHostname,
+                    'name': 'VMware Identity Manager',
                     'accessToken': vidmAccessToken,
-                    'refreshToken': vidmTokens['refresh_token']
+                    'refreshToken': vidmTokens['refresh_token'],
+                    'status': True
                 },
                 'aa': aa
             })
             LOG.DEBUG(endpoint)
             
         return endpoint['id']
+    

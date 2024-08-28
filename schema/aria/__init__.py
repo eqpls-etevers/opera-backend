@@ -16,17 +16,18 @@ from common import LAYER, AAA, SECONDS, SchemaConfig, Option, BaseSchema, ProfSc
 # Implement
 #===============================================================================
 @SchemaConfig(
-version=1,
+version=2,
 layer=LAYER.C,
 aaa=AAA.A,
-cache=Option(expire=SECONDS.HOUR))
+cache=Option(expire=3 * SECONDS.HOUR))
 class Endpoint(BaseModel, BaseSchema):
     
-    class Token(BaseModel):
-        hostname:str = ''
-        accessToken:str = ''
-        refreshToken:str = ''
+    class Info(BaseModel):
+        hostname:str
+        name:str
+        accessToken:str
+        refreshToken:str
+        status:bool
     
-    vidm:Token
-    aa:List[Token] = []
-    
+    vidm:Info
+    aa:List[Info] = []
