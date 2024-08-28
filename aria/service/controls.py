@@ -143,7 +143,8 @@ class Control(MeshControl):
                             'Accept': 'application/json'
                         })
                         LOG.DEBUG(res)
-                        branding = res['content'][0]['serviceName']
+                        if res['content'] and 'serviceName' in res['content'][0]: branding = res['content'][0]['serviceName']
+                        else: branding = hostname
                 except Exception as e:
                     LOG.DEBUG(e)
                     branding = None
