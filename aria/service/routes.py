@@ -21,13 +21,13 @@ api = ctrl.api
 #===============================================================================
 # API Interfaces
 #===============================================================================
-@api.get(ctrl.loginUri)
+@api.get(ctrl.operaLoginUri)
 async def login() -> RedirectResponse:
     return RedirectResponse(url=ctrl.login())
 
 
-@api.get(ctrl.redirectUri)
+@api.get(ctrl.operaRedirectUri)
 async def callback(code:str, state:str, userstore:str) -> RedirectResponse:
-    response = RedirectResponse(url=ctrl.homeUrl)
+    response = RedirectResponse(url=ctrl.operaHomeUrl)
     response.set_cookie(key='ARIA_ENDPOINT_ID', value=await ctrl.authorize(code, state, userstore))
     return response

@@ -31,6 +31,7 @@ class Control(MeshControl):
         self.uerpEndpoint = f'http://{uerpHostname}:{uerpHostport}'
         
         self.operaClientId = self.endpoint.replace('.', '-')
+        self.operaHomeUrl = f'https://{self.endpoint}'
         self.operaLoginUri = f'{self.uri}/auth/login'
         self.operaRedirectUri = f'{self.uri}/auth/callback'
         self.operaRedirectUrl = f'https://{self.endpoint}{self.operaRedirectUri}'
