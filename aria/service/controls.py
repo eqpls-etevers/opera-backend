@@ -128,9 +128,18 @@ class Control(MeshControl):
             for hostname, client in self.aaMap.items():
                 clientId = client['clientId']
                 redirectUri = client['redirectUri']
+                state = base64.b64encode(f'https://{hostname}/identity/api/access-token'.encode('ascii')).decode('ascii')
+                
+                LOG.DEBUG(clientId)
+                LOG.DEBUG(redirectUri)
+                LOG.DEBUG(state)
+                
                 aaTokens = await req.get(f'/SAAS/auth/oauth2/authorize?response_type=code&client_id={clientId}&redirect_uri={redirectUri}&state={state}', headers={
                     'Authorization': f'Bearer {vidmAccessToken}'
                 })
+                
+                LOG.DEBUG(aaTokens)
+                
                 aa.append({
                     'hostname': hostname,
                     'accessToken': aaTokens['access_token'],
