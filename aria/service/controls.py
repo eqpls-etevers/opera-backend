@@ -121,13 +121,12 @@ class Control(MeshControl):
         async with AsyncRest(f'https://{self.vidmHostname}') as req:
             vidmTokens = await req.post(f'/SAAS/auth/oauthtoken?grant_type=authorization_code&code={code}&redirect_uri={self.operaRedirectUrl}', headers=self.vidmOperaHeaders)
         vidmAccessToken = vidmTokens['access_token']
-        aa = []
+        regions = []
         async with AsyncRest(f'https://{self.vidmHostname}') as req:
             for hostname, client in self.aaMap.items():
                 clientId = client['clientId']
                 redirectUri = client['redirectUri']
                 state = base64.b64encode(f'https://{hostname}/identity/api/access-token'.encode('ascii')).decode('ascii')
-                
                 try:
                     aaAccessToken = (await req.get(f'/SAAS/auth/oauth2/authorize?response_type=code&client_id={clientId}&redirect_uri={redirectUri}&state={state}', headers={
                         'Authorization': f'Bearer {vidmAccessToken}'
@@ -140,23 +139,20 @@ class Control(MeshControl):
                         if res['content'] and 'serviceName' in res['content'][0]: branding = res['content'][0]['serviceName']
                         else: branding = hostname
                 except: branding = None
-                aa.append({
-                    'hostname': hostname,
+                regions.append({
                     'name': branding if branding else hostname,
+                    'hostname': hostname,
                     'accessToken': aaAccessToken if branding else '',
-                    'refreshToken': '',
                     'status': True if branding else False
                 })
         async with AsyncRest(self.uerpEndpoint) as req:
             endpoint = await req.post('/internal/aria/endpoint', json={
                 'vidm': {
                     'hostname': self.vidmHostname,
-                    'name': 'VMware Identity Manager',
                     'accessToken': vidmAccessToken,
-                    'refreshToken': vidmTokens['refresh_token'],
-                    'status': True
+                    'refreshToken': vidmTokens['refresh_token']
                 },
-                'aa': aa
+                'regions': regions
             })
         return endpoint['id']
     

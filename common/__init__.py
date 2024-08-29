@@ -20,7 +20,7 @@ from .interfaces import SyncRest, AsyncRest
 
 from .models import Search, Option
 from .models import SchemaInfo, SchemaConfig
-from .models import ID, Key, EmptyReference
+from .models import ID, Key
 from .models import IdentSchema, StatusSchema, BaseSchema, ProfSchema, TagSchema, MetaSchema
 from .models import ServiceHealth, ModelStatus, ModelCount, Reference
 

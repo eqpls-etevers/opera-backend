@@ -9,25 +9,29 @@ Equal Plus
 #===============================================================================
 from typing import List
 from pydantic import BaseModel
-from common import LAYER, AAA, SECONDS, SchemaConfig, Option, BaseSchema, ProfSchema
+from common import CRUD, LAYER, AAA, SECONDS, SchemaConfig, Option, BaseSchema
 
 
 #===============================================================================
 # Implement
 #===============================================================================
 @SchemaConfig(
-version=2,
+version=3,
 layer=LAYER.C,
 aaa=AAA.A,
 cache=Option(expire=3 * SECONDS.HOUR))
 class Endpoint(BaseModel, BaseSchema):
     
-    class Info(BaseModel):
+    class VIDM(BaseModel):
         hostname:str
-        name:str
         accessToken:str
         refreshToken:str
+    
+    class Region(BaseModel):
+        name:str
+        hostname:str
+        accessToken:str
         status:bool
     
-    vidm:Info
-    aa:List[Info] = []
+    vidm:VIDM
+    regions:List[Region] = []
