@@ -46,7 +46,7 @@ def parameters(module, path, config):
         f'MINIO_BROWSER_REDIRECT_URL={minio_browser_redirect_uri}',
         f'MINIO_IDENTITY_OPENID_CONFIG_URL_PRIMARY_IAM={kc_openid_config_url}',
         f'MINIO_IDENTITY_OPENID_CLIENT_ID_PRIMARY_IAM={kc_openid_client_id}',
-        f'MINIO_IDENTITY_OPENID_ROLE_POLICY={kc_openid_role_policy}',
+        f'MINIO_IDENTITY_OPENID_ROLE_POLICY_PRIMARY_IAM={kc_openid_role_policy}',
         f'MINIO_IDENTITY_OPENID_DISPLAY_NAME_PRIMARY_IAM={kc_openid_display_name}',
         f'MINIO_IDENTITY_OPENID_SCOPES_PRIMARY_IAM={kc_openid_scopes}',
         f'MINIO_IDENTITY_OPENID_REDIRECT_URI_PRIMARY_IAM={kc_openid_redirect_uri}',
