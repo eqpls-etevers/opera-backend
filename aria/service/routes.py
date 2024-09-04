@@ -134,7 +134,6 @@ async def login() -> RedirectResponse:
 
 @api.get(ctrl.operaRedirectUri)
 async def callback(code:str, state:str, userstore:str) -> RedirectResponse:
-    response = RedirectResponse(url='https://localhost:44322')
-    # response = RedirectResponse(url=ctrl.operaHomeUrl)
+    response = RedirectResponse(url=ctrl.operaHomeUrl)
     response.set_cookie(key='ARIA_ENDPOINT_ID', value=await ctrl.authorize(code, state, userstore), samesite='none')
     return response
