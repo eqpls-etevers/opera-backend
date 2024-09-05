@@ -1,5 +1,5 @@
-# eqpls-backend
-Equal Plus Basic Backend
+# opera-backend
+Opera Backend
 
 ## Change Configurations for New Tenant
 
