@@ -329,6 +329,7 @@ class Control(MeshControl):
                 })
         async with AsyncRest(self.uerpEndpoint) as req:
             endpoint = await req.post('/internal/aria/endpoint', json={
+                'org': self.tenant,
                 'vidm': {
                     'hostname': self.vidmHostname,
                     'accessToken': vidmAccessToken,
