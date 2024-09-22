@@ -143,14 +143,14 @@ class Control(MeshControl):
                 })
 
                 await self.keycloak.post(f'/admin/realms/{realmId}/clients', {
-                    'clientId': f'https://{self.vidm_hostname}/SAAS/API/1.0/GET/metadata/sp.xml',
+                    'clientId': f'https://{self.vidmHostname}/SAAS/API/1.0/GET/metadata/sp.xml',
                     'name': 'vidm',
                     'description': 'vidm',
                     'protocol': 'saml',
                     'publicClient': True,
-                    'rootUrl': f'https://{self.vidm_hostname}',
-                    'baseUrl': f'https://{self.vidm_hostname}',
-                    'adminUrl': f'https://{self.vidm_hostname}/SAAS/auth/saml/response',
+                    'rootUrl': f'https://{self.vidmHostname}',
+                    'baseUrl': f'https://{self.vidmHostname}',
+                    'adminUrl': f'https://{self.vidmHostname}/SAAS/auth/saml/response',
                     'redirectUris': ['*'],
                     'authorizationServicesEnabled': False,
                     'serviceAccountsEnabled': False,
@@ -175,8 +175,8 @@ class Control(MeshControl):
                         client['attributes']['logoUri'] = ''
                         client['attributes']['policyUri'] = ''
                         client['attributes']['tosUri'] = ''
-                        client['attributes']['saml_assertion_consumer_url_post'] = f'https://{self.vidm_hostname}/SAAS/auth/saml/response'
-                        client['attributes']['saml_assertion_consumer_url_redirect'] = f'https://{self.vidm_hostname}/SAAS/auth/saml/response'
+                        client['attributes']['saml_assertion_consumer_url_post'] = f'https://{self.vidmHostname}/SAAS/auth/saml/response'
+                        client['attributes']['saml_assertion_consumer_url_redirect'] = f'https://{self.vidmHostname}/SAAS/auth/saml/response'
                         client['attributes']['saml_single_logout_service_url_post'] = ''
                         client['attributes']['saml_single_logout_service_url_redirect'] = ''
                         client['attributes']['saml_single_logout_service_url_soap'] = ''
