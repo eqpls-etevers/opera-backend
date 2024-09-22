@@ -296,7 +296,8 @@ class Control(MeshControl):
                     }
 
     def login(self):
-        return f'https://{self.vidmHostname}/SAAS/auth/oauth2/authorize?domain={self.domain}&response_type=code&state={self.generateUuid4()}&client_id={self.endpoint}&redirect_uri={self.operaRedirectUrl}'
+        # return f'https://{self.vidmHostname}/SAAS/auth/oauth2/authorize?domain={self.domain}&response_type=code&state={self.generateUuid4()}&client_id={self.endpoint}&redirect_uri={self.operaRedirectUrl}'
+        return f'https://{self.vidmHostname}/SAAS/auth/oauth2/authorize?domain=portal.lab&response_type=code&state={self.generateUuid4()}&client_id={self.endpoint}&redirect_uri={self.operaRedirectUrl}'
 
     async def authorize(self, code:str, state:str, userstore:str):
         async with AsyncRest(f'https://{self.vidmHostname}') as req:
