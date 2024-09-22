@@ -186,7 +186,7 @@ class Control(MeshControl):
                         client['attributes']['saml.assertion.lifespan'] = ''
                         client['authenticationFlowBindingOverrides']['browser'] = ''
                         await self.keycloak.put(f'/admin/realms/opera/clients/{clientId}', client)
-                        await self.keycloak.put(f'/admin/realms/opera/clients/{clientId}/default-client-scopes/{scopeId}')
+                        await self.keycloak.put(f'/admin/realms/opera/clients/{clientId}/default-client-scopes/{scopeId}', {})
                         break
                 else: raise EpException(404, 'Could not find client')
 
