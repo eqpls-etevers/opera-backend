@@ -336,5 +336,6 @@ class Control(MeshControl):
                 },
                 'regions': regions
             })
+        LOG.DEBUG(endpoint)
         return endpoint['id']
 
