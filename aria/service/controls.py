@@ -229,8 +229,8 @@ class Control(MeshControl):
                         'Content-Type': 'application/vnd.vmware.horizon.manager.connector.management.directory.jit+json',
                         'Accept': 'application/vnd.vmware.horizon.manager.connector.management.directory.jit+json'
                     }, json={
-                        'name': 'opera',
-                        'domains': ['portal.lab']
+                        'name': self.tenant,
+                        'domains': ['portal.lab'] # ONLY TEST
                     })
 
                     await req.post('/SAAS/jersey/manager/api/identityProviders', headers={
@@ -243,18 +243,18 @@ class Control(MeshControl):
                             'authScore': 1,
                             'defaultMethod': False,
                             'authMethodOrder': 0,
-                            'authMethodName': 'opera',
+                            'authMethodName': self.tenant,
                             'samlAuthnContext': 'urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified'
                         }],
                         'identityProviderType': 'MANUAL',
                         'nameIdFormatType': 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified',
-                        'friendlyName': 'opera',
+                        'friendlyName': self.tenant,
                         'metaData': kcIdpMetadata,
                         'preferredBinding': 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
                         'jitEnabled': True,
                         'directoryConfigurations': [{
                             'type': 'JIT_DIRECTORY',
-                            'name': 'opera',
+                            'name': self.tenant,
                             'directoryId': vidmJitDir['directoryConfigurationId'],
                             'userstoreId': vidmJitDir['userStoreId'],
                             'countDomains': 1,
@@ -272,7 +272,7 @@ class Control(MeshControl):
                         'description': '',
                         'nIDPStatus': 1,
                         'idpURL': None,
-                        'name': 'opera'
+                        'name': self.tenant
                     })
             else:
                 async with AsyncRest(self.vidmBaseUrl) as req:
