@@ -216,10 +216,10 @@ class Control(MeshControl):
                         'returnFailureResponse': False
                     })
 
-                    orgNetworks = await req.get('/SAAS/jersey/manager/api/orgnetworks', headers={
+                    orgNetworks = (await req.get('/SAAS/jersey/manager/api/orgnetworks', headers={
                         'Authorization': vidmBearerToken,
                         'Accept': 'application/vnd.vmware.horizon.manager.orgnetwork.list+json'
-                    })['items']
+                    }))['items']
                     for orgNetwork in orgNetworks:
                         if orgNetwork['name'] == 'ALL RANGES':
                             allRange = orgNetwork
