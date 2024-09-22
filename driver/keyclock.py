@@ -9,6 +9,13 @@ Created on 2024. 2. 8.
 #===============================================================================
 from common import EpException, AsyncRest, DriverBase
 
+#===============================================================================
+# Constants
+#===============================================================================
+KEYCLOAK_SESSION_IDLE_SEC = 7200
+KEYCLOAK_SESSION_MAX_SEC = 43200
+KEYCLOAK_TOKEN_LIFE_SPAN_SEC = 7200
+
 
 #===============================================================================
 # Implement
@@ -18,19 +25,27 @@ class KeyCloak(DriverBase):
     def __init__(self, config):
         DriverBase.__init__(self, config)
 
-        self._kcEndpoint = config['default']['endpoint']
-        self._kcUsername = config['default']['system_access_key']
-        self._kcPassword = config['default']['system_secret_key']
+        defConf = config['default']
+        kcConf = config['keycloak']
 
-        self._kcHostname = config['keycloak']['hostname']
-        self._kcHostport = int(config['keycloak']['hostport'])
+        self._kcEndpoint = defConf['endpoint']
+        self._kcEndpointUrl = f'https://{self._kcEndpoint}'
+        self._origins = [origin.strip() for origin in defConf['origins'].split(',')] if 'origins' in defConf and defConf['origins'] else []
+        if self._origins:
+            if '*' in self._origins: self._origins = ['*']
+            elif self._kcEndpointUrl not in self._origins: self._origins.append(self._kcEndpointUrl)
 
-        self._kcFrontend = f'https://{self._kcEndpoint}'
-        self._kcBaseUrl = f'http://{self._kcHostname}:{self._kcHostport}'
+        self._kcUsername = defConf['system_access_key']
+        self._kcPassword = defConf['system_secret_key']
 
+        self._kcHostname = kcConf['hostname']
+        self._kcHostport = int(kcConf['hostport'])
+        self._kcBaseUrl = f'http://{self._kcHostname}:{self._kcHostport}/auth'
+        self._kcTheme = kcConf['theme'] if 'theme' in kcConf and kcConf['theme'] else None
+
+        self._kcHeaders = None
         self._kcAccessToken = None
         self._kcRefreshToken = None
-        self._kcHeaders = None
 
     async def connect(self, *args, **kargs):
         async with AsyncRest(self._kcBaseUrl) as rest:
@@ -85,9 +100,9 @@ class KeyCloak(DriverBase):
                 if e.status_code == 401: return await (await self.connect()).patch(url, payload)
                 else: raise e
 
-    async def delete(self, url):
+    async def delete(self, url, payload=None):
         async with AsyncRest(self._kcBaseUrl) as s:
-            try: return await s.delete(url, headers=self._kcHeaders)
+            try: return await s.delete(url, json=payload, headers=self._kcHeaders)
             except EpException as e:
                 if e.status_code == 401: return await (await self.connect()).delete(url)
                 else: raise e
@@ -96,34 +111,34 @@ class KeyCloak(DriverBase):
     # Master Interface
     #===========================================================================
     # Realm ####################################################################
-    async def readRealm(self, realm:str):
-        if realm != 'master': return await self.get(f'/admin/realms/{realm}')
+    async def readRealm(self, realmId:str):
+        if realmId != 'master': return await self.get(f'/admin/realms/{realmId}')
         return None
 
-    async def searchRealm(self, filter:str | None=None):
+    async def searchRealms(self):
         results = []
-
-        if filter:
-            for realm in await self.get(f'/admin/realms'):
-                if realm['realm'] != 'master':
-                    if filter in realm['realm']: results.append(realm)
-        else:
-            for realm in await self.get(f'/admin/realms'):
-                if realm['realm'] != 'master': results.append(realm)
-
+        for realm in await self.get(f'/admin/realms'):
+            if realm['realm'] != 'master': results.append(realm)
         return results
 
-    async def createRealm(self, realm:str, displayName:str):
-        if realm == 'master': raise EpException(400, 'Could not create realm with predefined name')
-        return await self.createRealmPrivileged(realm, displayName)
-
-    async def createRealmPrivileged(self, realm:str, displayName:str):
+    async def createRealm(self, realmId:str, displayName:str):
+        if realmId == 'master': raise EpException(400, 'Could not create realm with predefined name')
         await self.post(f'/admin/realms', {
-            'realm': realm,
+            'realm': realmId,
             'displayName': displayName,
             'enabled': True
         })
-        await self.post(f'/admin/realms/{realm}/client-scopes', {
+
+        realm = await self.get(f'/admin/realms/{realmId}')
+        realm['resetPasswordAllowed'] = True
+        await self.put(f'/admin/realms/{realmId}', realm)
+
+        if self._kcTheme:
+            realm = await self.get(f'/admin/realms/{realmId}')
+            realm['loginTheme'] = self._kcTheme
+            await self.put(f'/admin/realms/{realmId}/ui-ext', realm)
+
+        await self.post(f'/admin/realms/{realmId}/client-scopes', {
             'name': 'openid-client-scope',
             'description': 'openid-client-scope',
             'type': 'default',
@@ -135,16 +150,16 @@ class KeyCloak(DriverBase):
                 'gui.order': ''
             }
         })
-        for scope in await self.get(f'/admin/realms/{realm}/client-scopes'):
+        for scope in await self.get(f'/admin/realms/{realmId}/client-scopes'):
             if scope['name'] == 'openid-client-scope': scopeId = scope['id']; break
         else: raise EpException(404, 'Could not find client scope')
-        await self.post(f'/admin/realms/{realm}/client-scopes/{scopeId}/protocol-mappers/models', {
-            'name': 'roles',
+        await self.post(f'/admin/realms/{realmId}/client-scopes/{scopeId}/protocol-mappers/models', {
+            'name': 'policy',
             'protocol': 'openid-connect',
             'protocolMapper': 'oidc-usermodel-attribute-mapper',
             'config': {
-                'claim.name': 'roles',
-                'user.attribute': 'roles',
+                'claim.name': 'policy',
+                'user.attribute': 'policy',
                 'jsonType.label': 'String',
                 'multivalued': True,
                 'aggregate.attrs': True,
@@ -155,7 +170,7 @@ class KeyCloak(DriverBase):
                 'introspection.token.claim': True
             }
         })
-        await self.post(f'/admin/realms/{realm}/client-scopes/{scopeId}/protocol-mappers/models', {
+        await self.post(f'/admin/realms/{realmId}/client-scopes/{scopeId}/protocol-mappers/models', {
             'name': 'groups',
             'protocol': 'openid-connect',
             'protocolMapper': 'oidc-usermodel-attribute-mapper',
@@ -172,18 +187,35 @@ class KeyCloak(DriverBase):
                 'introspection.token.claim': True
             }
         })
-        await self.delete(f'/admin/realms/{realm}/default-default-client-scopes/{scopeId}')
-        await self.put(f'/admin/realms/{realm}/default-default-client-scopes/{scopeId}', {})
+        await self.post(f'/admin/realms/{realmId}/client-scopes/{scopeId}/protocol-mappers/models', {
+            'name': 'roles',
+            'protocol': 'openid-connect',
+            'protocolMapper': 'oidc-usermodel-realm-role-mapper',
+            'config': {
+                'claim.name': 'roles',
+                'usermodel.realmRoleMapping.rolePrefix': '',
+                'jsonType.label': 'String',
+                'multivalued': True,
+                'id.token.claim': True,
+                'access.token.claim': True,
+                'lightweight.claim': False,
+                'userinfo.token.claim': True,
+                'introspection.token.claim': True
+            }
+        })
+        await self.delete(f'/admin/realms/{realmId}/default-default-client-scopes/{scopeId}')
+        await self.put(f'/admin/realms/{realmId}/default-default-client-scopes/{scopeId}', {})
 
-        await self.post(f'/admin/realms/{realm}/clients', {
-            'clientId': realm,
-            'name': realm,
-            'description': realm,
+        await self.post(f'/admin/realms/{realmId}/clients', {
+            'clientId': realmId,
+            'name': realmId,
+            'description': realmId,
             'protocol': 'openid-connect',
             'publicClient': True,
-            'rootUrl': self._kcFrontend,
-            'baseUrl': self._kcFrontend,
+            'rootUrl': self._kcEndpointUrl,
+            'baseUrl': self._kcEndpointUrl,
             'redirectUris': ['*'],
+            'webOrigins': self._origins,
             'authorizationServicesEnabled': False,
             'serviceAccountsEnabled': False,
             'implicitFlowEnabled': False,
@@ -198,20 +230,21 @@ class KeyCloak(DriverBase):
                 'post.logout.redirect.uris': '+'
             }
         })
-        for client in await self.get(f'/admin/realms/{realm}/clients'):
-            if client['clientId'] == realm: clientId = client['id']; break
+        for client in await self.get(f'/admin/realms/{realmId}/clients'):
+            if client['clientId'] == realmId: clientId = client['id']; break
         else: raise EpException(404, 'Could not find client')
-        await self.put(f'/admin/realms/{realm}/clients/{clientId}/default-client-scopes/{scopeId}', {})
+        await self.put(f'/admin/realms/{realmId}/clients/{clientId}/default-client-scopes/{scopeId}', {})
 
-        await self.post(f'/admin/realms/{realm}/clients', {
+        await self.post(f'/admin/realms/{realmId}/clients', {
             'clientId': 'guacamole',
             'name': 'guacamole',
             'description': 'guacamole',
             'protocol': 'openid-connect',
             'publicClient': True,
-            'rootUrl': self._kcFrontend,
-            'baseUrl': self._kcFrontend,
+            'rootUrl': self._kcEndpointUrl,
+            'baseUrl': self._kcEndpointUrl,
             'redirectUris': ['*'],
+            'webOrigins': self._origins,
             'authorizationServicesEnabled': False,
             'serviceAccountsEnabled': False,
             'implicitFlowEnabled': True,
@@ -225,20 +258,21 @@ class KeyCloak(DriverBase):
                 'oidc.ciba.grant.enabled': False,
             }
         })
-        for client in await self.get(f'/admin/realms/{realm}/clients'):
+        for client in await self.get(f'/admin/realms/{realmId}/clients'):
             if client['clientId'] == 'guacamole': clientId = client['id']; break
         else: raise EpException(404, 'Could not find client')
-        await self.put(f'/admin/realms/{realm}/clients/{clientId}/default-client-scopes/{scopeId}', {})
+        await self.put(f'/admin/realms/{realmId}/clients/{clientId}/default-client-scopes/{scopeId}', {})
 
-        await self.post(f'/admin/realms/{realm}/clients', {
+        await self.post(f'/admin/realms/{realmId}/clients', {
             'clientId': 'minio',
             'name': 'minio',
             'description': 'minio',
             'protocol': 'openid-connect',
             'publicClient': False,
-            'rootUrl': self._kcFrontend,
-            'baseUrl': self._kcFrontend,
+            'rootUrl': self._kcEndpointUrl,
+            'baseUrl': self._kcEndpointUrl,
             'redirectUris': ['*'],
+            'webOrigins': self._origins,
             'authorizationServicesEnabled': False,
             'serviceAccountsEnabled': False,
             'implicitFlowEnabled': False,
@@ -254,126 +288,181 @@ class KeyCloak(DriverBase):
                 'use.jwks.url': True
             }
         })
-        for client in await self.get(f'/admin/realms/{realm}/clients'):
+        for client in await self.get(f'/admin/realms/{realmId}/clients'):
             if client['clientId'] == 'minio':
                 clientId = client['id']; break
         else: raise EpException(404, 'Could not find client')
-        await self.put(f'/admin/realms/{realm}/clients/{clientId}/default-client-scopes/{scopeId}', {})
+        await self.put(f'/admin/realms/{realmId}/clients/{clientId}/default-client-scopes/{scopeId}', {})
 
-        await self.put(f'/admin/realms/{realm}', {
-            'accessTokenLifespan': 1800,
+        await self.put(f'/admin/realms/{realmId}', {
+            'ssoSessionIdleTimeout': KEYCLOAK_SESSION_IDLE_SEC,
+            'ssoSessionMaxLifespan': KEYCLOAK_SESSION_MAX_SEC,
+            'accessTokenLifespan': KEYCLOAK_TOKEN_LIFE_SPAN_SEC,
+            'accessTokenLifespanForImplicitFlow': KEYCLOAK_TOKEN_LIFE_SPAN_SEC,
             'revokeRefreshToken': True
         })
-        return await self.readRealm(realm)
+        return await self.readRealm(realmId)
 
-    async def updateRealmDisplayName(self, realm:str, displayName:str):
-        await self.put(f'/admin/realms/{realm}', {'displayName': displayName})
+    async def updateRealm(self, realm:dict):
+        realmId = realm['realm']
+        if realmId == 'master': raise EpException(400, 'Could not update realm with predefined name')
+        await self.put(f'/admin/realms/{realmId}', realm)
+        return await self.readRealm(realmId)
+
+    async def deleteRealm(self, realmId:str):
+        if realmId == 'master': raise EpException(400, 'Could not delete realm with predefined name')
+        await self.delete(f'/admin/realms/{realmId}')
         return True
 
-    async def deleteRealm(self, realm:str):
-        await self.delete(f'/admin/realms/{realm}')
-        return True
-
-    async def getClientSecret(self, realm:str, clientId:str):
-        for client in await self.get(f'/admin/realms/{realm}/clients'):
+    # Client ###################################################################
+    async def getClientSecret(self, realmId:str, clientId:str):
+        for client in await self.get(f'/admin/realms/{realmId}/clients'):
             if client['clientId'] == clientId:
                 if 'secret' in client: return client['secret']
                 else: return None
         return None
 
+    # Role #####################################################################
+    async def readRole(self, realmId:str, roleId:str):
+        return await self.get(f'/admin/realms/{realmId}/roles-by-id/{roleId}')
+
+    async def searchRoles(self, realmId:str, search:str | None=None):
+        if search: return await self.get(f'/admin/realms/{realmId}/roles?search={search}')
+        else: return await self.get(f'/admin/realms/{realmId}/roles')
+
+    async def searchGroupsInRole(self, realmId:str, roleId:str):
+        roleName = (await self.readRole(realmId, roleId))['name']
+        return await self.get(f'/admin/realms/{realmId}/roles/{roleName}/groups')
+
+    async def searchUsersInRole(self, realmId:str, roleId:str):
+        roleName = (await self.readRole(realmId, roleId))['name']
+        return await self.get(f'/admin/realms/{realmId}/roles/{roleName}/users')
+
+    async def createRole(self, realmId:str, name:str, description:str='', attributes:dict | None=None):
+        await self.post(f'/admin/realms/{realmId}/roles', {
+            'name': name,
+            'description': description,
+            'attributes': attributes if attributes else {}
+        })
+        return await self.get(f'/admin/realms/{realmId}/roles/{name}')
+
+    async def updateRole(self, realmId:str, role:dict):
+        roleId = role['id']
+        await self.put(f'/admin/realms/{realmId}/roles-by-id/{roleId}', role)
+        return await self.readRole(realmId, roleId)
+
+    async def deleteRole(self, realmId:str, roleId:str):
+        await self.delete(f'/admin/realms/{realmId}/roles-by-id/{roleId}')
+        return True
+
     # Group ####################################################################
-    async def readGroup(self, realm:str, groupId:str):
-        return await self.get(f'/admin/realms/{realm}/groups/{groupId}')
+    async def readGroup(self, realmId:str, groupId:str):
+        return await self.get(f'/admin/realms/{realmId}/groups/{groupId}')
 
-    async def searchGroup(self, realm:str, parentId:str | None=None, filter:str | None=None):
-        if parentId: groups = await self.get(f'/admin/realms/{realm}/groups/{parentId}/children')
-        else: groups = await self.get(f'/admin/realms/{realm}/groups')
-        if filter:
-            result = []
-            for group in groups:
-                if filter in group['name']: result.append(group)
-            return result
-        else: groups
+    async def searchGroups(self, realmId:str, search:str | None=None):
+        if search: return await self.get(f'/admin/realms/{realmId}/groups?search={search}')
+        else: return await self.get(f'/admin/realms/{realmId}/groups')
 
-    async def findGroup(self, realm:str, groupName:str, parentId:str | None=None):
-        for group in await self.searchGroup(realm, parentId, groupName):
-            if group['name'] == groupName: return group
-        return None
+    async def searchUsersInGroup(self, realmId:str, groupId:str):
+        return await self.get(f'/admin/realms/{realmId}/groups/{groupId}/members')
 
-    async def createGroup(self, realm:str, groupName:str, parentId:str | None=None, attributes:dict | None=None):
-        payload = {'name': groupName}
-        if attributes: payload['attributes'] = attributes
-        if parentId: await self.post(f'/admin/realms/{realm}/groups/{parentId}/children', payload)
-        else: await self.post(f'/admin/realms/{realm}/groups', payload)
-        return await self.findGroup(realm, groupName, parentId)
+    async def createGroup(self, realmId:str, name:str, attributes:dict | None=None):
+        await self.post(f'/admin/realms/{realmId}/groups', {
+            'name': name,
+            'attributes': attributes if attributes else {}
+        })
+        groups = await self.searchGroups(realmId, search=name)
+        for group in groups:
+            if name == group['name']: return group
+        raise EpException(500, 'Could not find group created')
 
-    async def updateGroupName(self, realm:str, groupId:str, groupName:str):
-        await self.put(f'/admin/realms/{realm}/groups/{groupId}', {'name': groupName})
-        return True
+    async def updateGroup(self, realmId:str, group:dict):
+        groupId = group['id']
+        await self.put(f'/admin/realms/{realmId}/groups/{groupId}', group)
+        return await self.readGroup(realmId, groupId)
 
-    async def updateGroupAttributes(self, realm:str, groupId:str, attributes:dict):
-        await self.put(f'/admin/realms/{realm}/groups/{groupId}', {'attributes': attributes})
-        return True
+    async def insertGroupRole(self, realmId:str, groupId:str, roleIds:list[str]):
+        roles = []
+        for role in await self.searchRoles(realmId):
+            if role['id'] in roleIds: roles.append(role)
+        await self.post(f'/admin/realms/{realmId}/groups/{groupId}/role-mappings/realm', roles)
+        return await self.readGroup(realmId, groupId)
 
-    async def deleteGroup(self, realm:str, groupId:str):
-        await self.delete(f'/admin/realms/{realm}/groups/{groupId}')
+    async def deleteGroupRole(self, realmId:str, groupId:str, roleIds:list[str]):
+        roles = []
+        for role in await self.searchRoles(realmId):
+            if role['id'] in roleIds: roles.append(role)
+        await self.delete(f'/admin/realms/{realmId}/groups/{groupId}/role-mappings/realm', roles)
+        return await self.readGroup(realmId, groupId)
+
+    async def deleteGroup(self, realmId:str, groupId:str):
+        await self.delete(f'/admin/realms/{realmId}/groups/{groupId}')
         return True
 
     # User #####################################################################
-    async def readUser(self, realm:str, userId:str):
-        return await self.get(f'/admin/realms/{realm}/users/{userId}')
+    async def readUser(self, realmId:str, userId:str):
+        return await self.get(f'/admin/realms/{realmId}/users/{userId}')
 
-    async def readUsersInGroup(self, realm:str, groupId:str):
-        return await self.get(f'/admin/realms/{realm}/groups/{groupId}/members')
+    async def searchUsers(self, realmId:str, search:str | None=None):
+        if search: return await self.get(f'/admin/realms/{realmId}/users?search={search}')
+        else: return await self.get(f'/admin/realms/{realmId}/users')
 
-    async def searchUser(self, realm:str, filter:str | None=None):
-        if filter: return await self.get(f'/admin/realms/{realm}/users?username={filter}')
-        else: return await self.get(f'/admin/realms/{realm}/users')
-
-    async def findUser(self, realm:str, username:str):
-        for result in await self.searchUser(realm, username):
-            if result['username'] == username: return result
-        return None
-
-    async def createUser(self, realm:str, username:str, email:str, firstName:str, lastName:str, password:str | None=None, enabled:bool=True):
-        await self.post(f'/admin/realms/{realm}/users', {
+    async def createUser(self, realmId:str, username:str, email:str, firstName:str, lastName:str):
+        await self.post(f'/admin/realms/{realmId}/users', {
             'username': username,
             'email': email,
             'firstName': firstName,
             'lastName': lastName
         })
-        user = await self.findUser(realm, username)
-        userId = user['id']
-        await self.updateUserPassword(realm, userId, password if password else username, False if password else True)
-        if enabled: await self.put(f'/admin/realms/{realm}/users/{userId}', {'enabled': True})
-        return user
+        for user in await self.searchUsers(realmId, search=username):
+            if username == user['username']:
+                userId = user['id']
+                roles = await self.get(f'/admin/realms/{realmId}/users/{userId}/role-mappings/realm')
+                await self.delete(f'/admin/realms/{realmId}/users/{userId}/role-mappings/realm', roles)
+                return user
+        raise EpException(500, 'Could not find user created')
 
-    async def updateUserPassword(self, realm:str, userId:str, password:str, temporary=True):
-        await self.put(f'/admin/realms/{realm}/users/{userId}/reset-password', {
+    async def updateUser(self, realmId:str, user:dict):
+        userId = user['id']
+        await self.put(f'/admin/realms/{realmId}/users/{userId}', user)
+        return await self.readUser(realmId, userId)
+
+    async def updateUserEnabled(self, realmId:str, userId:str, enabled:bool):
+        await self.put(f'/admin/realms/{realmId}/users/{userId}', {'enabled': enabled})
+        return True
+
+    async def updateUserPassword(self, realmId:str, userId:str, password:str, temporary:bool=True):
+        await self.put(f'/admin/realms/{realmId}/users/{userId}/reset-password', {
             'temporary': temporary,
             'type': 'password',
             'value': password
         })
         return True
 
-    async def updateUserProperty(self, realm:str, userId:str, email:str | None=None, firstName:str | None=None, lastName:str | None=None):
-        payload = {}
-        if email: payload['email'] = email
-        if firstName: payload['firstName'] = firstName
-        if lastName: payload['lastName'] = lastName
-        if payload: await self.put(f'/admin/realms/{realm}/users/{userId}', payload)
-        return True
+    async def insertUserRoles(self, realmId:str, userId:str, roleIds:list[str]):
+        roles = []
+        for role in await self.searchRoles(realmId):
+            if role['id'] in roleIds: roles.append(role)
+        await self.post(f'/admin/realms/{realmId}/users/{userId}/role-mappings/realm', roles)
+        return await self.readUser(realmId, userId)
 
-    async def registerUserToGroup(self, realm:str, userId:str, groupId:str):
-        await self.put(f'/admin/realms/{realm}/users/{userId}/groups/{groupId}', {})
-        return True
+    async def deleteUserRoles(self, realmId:str, userId:str, roleIds:list[str]):
+        roles = []
+        for role in await self.searchRoles(realmId):
+            if role['id'] in roleIds: roles.append(role)
+        await self.delete(f'/admin/realms/{realmId}/users/{userId}/role-mappings/realm', roles)
+        return await self.readUser(realmId, userId)
 
-    async def unregisterUserFromGroup(self, realm:str, userId:str, groupId:str):
-        await self.delete(f'/admin/realms/{realm}/users/{userId}/groups/{groupId}')
-        return True
+    async def registerUserToGroup(self, realmId:str, userId:str, groupId:str):
+        await self.put(f'/admin/realms/{realmId}/users/{userId}/groups/{groupId}', {})
+        return await self.readUser(realmId, userId)
 
-    async def deleteUser(self, realm:str, userId:str):
-        await self.delete(f'/admin/realms/{realm}/users/{userId}')
+    async def unregisterUserFromGroup(self, realmId:str, userId:str, groupId:str):
+        await self.delete(f'/admin/realms/{realmId}/users/{userId}/groups/{groupId}')
+        return await self.readUser(realmId, userId)
+
+    async def deleteUser(self, realmId:str, userId:str):
+        await self.delete(f'/admin/realms/{realmId}/users/{userId}')
         return True
 
     #===========================================================================

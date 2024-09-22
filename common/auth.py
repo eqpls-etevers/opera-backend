@@ -50,8 +50,8 @@ class AuthInfo(BaseModel):
 @SchemaConfig(
 version=1,
 aaa=AAA.AA,
-cache=Option(expire=SECONDS.HOUR),
-search=Option(expire=SECONDS.DAY))
+cache=Option(expire=SECONDS.INFINITY),
+search=Option(expire=SECONDS.INFINITY))
 class Org(BaseModel, BaseSchema):
 
     externalId: Key = ''
@@ -67,25 +67,27 @@ search=Option(expire=SECONDS.DAY))
 class Account(BaseModel, BaseSchema):
 
     externalId: Key = ''
-    username: str = ''
+    username: Key
+    email: str
+    givenName: str
+    familyName: str
     displayName: str = ''
-    givenName: str = ''
-    familyName: str = ''
-    email: str = ''
+    enabled: bool = False
     roles: list[str] = []
     groups: list[str] = []
-    detail: Reference
+    detail: Reference = {}
 
 
 @SchemaConfig(
 version=1,
 aaa=AAA.AA,
-cache=Option(expire=SECONDS.HOUR),
-search=Option(expire=SECONDS.DAY))
+cache=Option(expire=SECONDS.INFINITY),
+search=Option(expire=SECONDS.INFINITY))
 class Role(BaseModel, ProfSchema, BaseSchema):
 
-    admin:bool = False
     externalId:Key = ''
+    type:Key = 'general'
+    admin:bool = False
     aclRead: list[str] = []
     aclCreate: list[str] = []
     aclUpdate: list[str] = []
@@ -95,9 +97,10 @@ class Role(BaseModel, ProfSchema, BaseSchema):
 @SchemaConfig(
 version=1,
 aaa=AAA.AA,
-cache=Option(expire=SECONDS.HOUR),
-search=Option(expire=SECONDS.DAY))
+cache=Option(expire=SECONDS.INFINITY),
+search=Option(expire=SECONDS.INFINITY))
 class Group(BaseModel, ProfSchema, BaseSchema):
 
     externalId: Key = ''
-    parentId: Key = ''
+    type:Key = 'general'
+    objectPolicy: bool = True
