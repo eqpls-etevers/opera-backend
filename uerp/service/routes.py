@@ -23,5 +23,4 @@ api = ctrl.api
 
 @api.post('/internal/aria/endpoint', tags=['Internal Only'], name='Register Aria Endpoint Token')
 async def register_aria_endpoint(endpoint:Endpoint) -> Endpoint:
-    LOG.DEBUG(endpoint)
     return await endpoint.createModel()

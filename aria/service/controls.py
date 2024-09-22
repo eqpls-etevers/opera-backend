@@ -79,7 +79,6 @@ class Control(MeshControl):
 
                 async with AsyncRest(self.keycloak._kcBaseUrl) as req:
                     kcIdpMetadata = await req.get(f'/realms/{realmId}/protocol/saml/descriptor')
-                LOG.DEBUG(kcIdpMetadata)
                 if not kcIdpMetadata: raise Exception('hahahah')
 
                 await self.keycloak.post(f'/admin/realms/{realmId}/client-scopes', {
@@ -329,7 +328,6 @@ class Control(MeshControl):
                 })
         async with AsyncRest(self.uerpEndpoint) as req:
             endpoint = await req.post('/internal/aria/endpoint', json={
-                'org': self.tenant,
                 'vidm': {
                     'hostname': self.vidmHostname,
                     'accessToken': vidmAccessToken,
@@ -337,6 +335,5 @@ class Control(MeshControl):
                 },
                 'regions': regions
             })
-        LOG.DEBUG(endpoint)
         return endpoint['id']
 
