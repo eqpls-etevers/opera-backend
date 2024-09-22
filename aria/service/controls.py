@@ -76,8 +76,11 @@ class Control(MeshControl):
 
             if not vidmOperaClient:
                 realmId = self.tenant
-                kcIdpMetadata = await self.keycloak.get(f'/realms/{realmId}/protocol/saml/descriptor')
+
+                async with AsyncRest(self.keycloak._kcBaseUrl) as req:
+                    kcIdpMetadata = await req.get(f'/realms/{realmId}/protocol/saml/descriptor')
                 LOG.DEBUG(kcIdpMetadata)
+                if not kcIdpMetadata: raise Exception('hahahah')
 
                 await self.keycloak.post(f'/admin/realms/{realmId}/client-scopes', {
                     'name': 'vidm-scope',
