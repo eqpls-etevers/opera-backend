@@ -232,7 +232,7 @@ class Control(MeshControl):
                         'Accept': 'application/vnd.vmware.horizon.manager.connector.management.directory.jit+json'
                     }, json={
                         'name': self.tenant,
-                        'domains': ['portal.lab'] # ONLY TEST
+                        'domains': [self.domain]
                     })
 
                     await req.post('/SAAS/jersey/manager/api/identityProviders', headers={
