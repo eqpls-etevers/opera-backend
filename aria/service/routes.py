@@ -41,11 +41,15 @@ async def get_api(
     if request.scope['query_string']:
         queryString = request.scope['query_string'].decode('latin-1')
         url = f'{url}?{queryString}'
-    async with AsyncRest(f'https://{aaHost}/') as req:
-        return await req.get(url, headers={
-            'Authorization': f'Bearer {aaAuth}',
-            'Accept': 'application/json; charset=utf-8'
-        })
+    try:
+        async with AsyncRest(f'https://{aaHost}/') as req:
+            return await req.get(url, headers={
+                'Authorization': f'Bearer {aaAuth}',
+                'Accept': 'application/json; charset=utf-8'
+            })
+    except Exception as e:
+        LOG.DEBUG(e)
+        raise e
 
 
 @api.post(f'{ctrl.uri}/aa/{{url:path}}')
