@@ -11,6 +11,7 @@ from typing import Annotated
 from fastapi import Request, Depends
 from fastapi.security import APIKeyHeader
 from fastapi.responses import RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from common import ORG_HEADER, AUTH_HEADER, AsyncRest
 
@@ -21,6 +22,15 @@ from .controls import Control
 #===============================================================================
 ctrl = Control(__file__)
 api = ctrl.api
+
+origins = ['*']
+api.add_middleware(
+    CORSMiddleware,
+    allow_origins=['*'],
+    allow_credentials=True,
+    allow_methods=['*'],
+    allow_headers=['*'],
+)
 
 AA_AUTH_HEADER = Annotated[str, Depends(APIKeyHeader(name='AA-Auth'))]
 AA_HOST_HEADER = Annotated[str, Depends(APIKeyHeader(name='AA-Host'))]

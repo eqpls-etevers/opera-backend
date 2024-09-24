@@ -15,6 +15,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 from fastapi.responses import PlainTextResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from common import EpException, ID, AUTH_HEADER, ORG_HEADER
 
@@ -28,6 +29,15 @@ from schema.secret.access import OpenSsh, OpenSsshRequest
 #===============================================================================
 ctrl = Control(__file__)
 api = ctrl.api
+
+origins = ['*']
+api.add_middleware(
+    CORSMiddleware,
+    allow_origins=['*'],
+    allow_credentials=True,
+    allow_methods=['*'],
+    allow_headers=['*'],
+)
 
 
 #===============================================================================
