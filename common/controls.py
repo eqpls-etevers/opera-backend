@@ -486,11 +486,6 @@ class UerpControl(BaseControl):
         if filter: filter = f'{qFilter} AND ({filter})'
         else: filter = qFilter
         
-        LOG.DEBUG(authInfo.checkAdmin())
-        LOG.DEBUG(schemaInfo.aaa)
-        LOG.DEBUG(schemaInfo.sref)
-        LOG.DEBUG(authInfo.aclRead)
-        
         if not authInfo.checkAdmin():
             if AAA.checkAuthentication(schemaInfo.aaa) and not authInfo.checkReadACL(schemaInfo.sref): raise EpException(403, 'Forbidden')
             if AAA.checkAccount(schemaInfo.aaa): filter = f'{filter} AND owner:{authInfo.username}'
